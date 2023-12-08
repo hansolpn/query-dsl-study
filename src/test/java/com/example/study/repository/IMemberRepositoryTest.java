@@ -2,7 +2,6 @@ package com.example.study.repository;
 
 import com.example.study.entity.Member;
 import com.example.study.entity.QMember;
-import com.example.study.entity.Team;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -28,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class IMemberRepositoryTest {
 
     @Autowired
-    IMemberRepository IMemberRepository;
+    IMemberRepository memberRepository;
 
     @Autowired
     ITeamRepository teamRepository;
@@ -74,16 +73,16 @@ class IMemberRepositoryTest {
                 .age(80)
                 .build();
 
-        IMemberRepository.save(member1);
-        IMemberRepository.save(member2);
-        IMemberRepository.save(member3);
-        IMemberRepository.save(member4);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+        memberRepository.save(member3);
+        memberRepository.save(member4);
     }
 
     @Test
     @DisplayName("testJPA")
     void testJPA() {
-        List<Member> members = IMemberRepository.findAll();
+        List<Member> members = memberRepository.findAll();
 
         members.forEach(System.out::println);
     }
@@ -203,7 +202,7 @@ class IMemberRepositoryTest {
         String name = "member4";
 
         //when
-        List<Member> result = IMemberRepository.findByName(name);
+        List<Member> result = memberRepository.findByName(name);
 
         //then
         assertEquals(1, result.size());
@@ -360,6 +359,50 @@ class IMemberRepositoryTest {
                 )).fetch();
 
         //then
+        System.out.println("\n\n\n");
+        results.forEach(System.out::println);
+        System.out.println("\n\n\n");
+    }
+
+    @Test
+    @DisplayName("나이가 평균 나이 이상인 회원을 조회")
+    void subQueryGne() {
+        //given
+        QMember m2 = new QMember("m2");
+
+        //when
+        List<Member> results = factory.selectFrom(member)
+                .where(member.age.goe(
+                        // JPAExpressions는 from절을 제외하고, select와 where절에서 사용이 가능
+                        // JPQL도 마찬가지로 from절 서브쿼리 사용 불가
+                        // -> Native SQL을 작성하던지, mybatis or JDBCTemplate이용, 따로따로 두번 조회도 사용
+                        JPAExpressions
+                                .select(m2.age.avg())
+                                .from(m2)
+                ))
+                .fetch();
+
+        //then
+        assertEquals(7, results.size());
+
+        System.out.println("\n\n\n");
+        results.forEach(System.out::println);
+        System.out.println("\n\n\n");
+    }
+
+    @Test
+    @DisplayName("동적 sql 테스트")
+    void dynamicQueryTest() {
+        //given
+        String name = null; //"member2"
+        int age = 30;
+
+        //when
+        List<Member> results = memberRepository.findUser(name, null);
+
+        //then
+        assertEquals(12, results.size());
+
         System.out.println("\n\n\n");
         results.forEach(System.out::println);
         System.out.println("\n\n\n");
